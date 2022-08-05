@@ -7,19 +7,120 @@ output:
 
 
 ## Loading and preprocessing the data
-
-
+```{r}
+library(dplyr)
+library(ggplot2)
+df <- read.csv("activity.csv")
+days <- unique(df$date)
+```
 
 ## What is mean total number of steps taken per day?
-
-
+```{r}
+steps <- matrix(ncol = 2, nrow = 0)
+colnames(steps) <- c("date", "total_steps")
+for (i in days) {
+        x <- c()
+        dff <- filter(df, date == i)
+        x <- c(i, sum(dff$steps, na.rm = TRUE))
+        steps <- rbind(steps,x)
+}
+steps <- as.data.frame(steps)
+rownames(steps) <- days
+steps$total_steps <- as.numeric(steps$total_steps)
+hist(steps$total_steps, main = "Histogram of total steps per day", xlab = "Tatal steps per day")
+```
+```{r}
+m <- mean(steps$total_steps, na.rm = TRUE)
+med <- median(steps$total_steps, na.rm = TRUE)
+cat("The mean of total steps is ", m, " with a median of " , med)
+```
 
 ## What is the average daily activity pattern?
-
-
-
+```{r}
+int <- unique(df$interval)
+pat <- matrix(ncol = 2, nrow = 0)
+colnames(pat) <- c("interval", "mean")
+for (i in int) {
+        x <- c()
+        dff <- filter(df, interval == i)
+        x <- c(i, mean(dff$steps, na.rm = TRUE))
+        pat <- rbind(pat,x)
+}
+pat <- as.data.frame(pat)
+p <- ggplot(data = pat,aes(x = interval, y = mean)) + geom_step()
+p
+```
+```{r}
+max <- max(pat$mean)
+max <- filter(pat, mean == max)
+cat("The interval with the highest mean is ", max$interval, " with a mean of " , max$mean,"steps.")
+```
 ## Imputing missing values
+```{r}
+na <- sum(is.na(df$steps))
+cat("The total number of missing values (NA) =",na)
+```
+```{r}
+dff <- matrix(nrow = 0, ncol = 3)
+for (i in days) {
+        f <- filter(df, date == i)
+        x <- mean(f$steps, na.rm=TRUE)
+        f[is.na(f)]<-as.character(x)
+        dff <- rbind(dff,f)
+}
+```
 
-
-
+```{r}
+steps <- matrix(ncol = 2, nrow = 0)
+colnames(steps) <- c("date", "total_steps")
+for (i in days) {
+        x <- c()
+        dfff <- filter(dff, date == i)
+        x <- c(i, sum(as.numeric(dfff$steps), na.rm = TRUE))
+        steps <- rbind(steps,x)
+}
+steps <- as.data.frame(steps)
+rownames(steps) <- days
+steps$total_steps <- as.numeric(steps$total_steps)
+hist(steps$total_steps, main = "Histogram of total steps per day", xlab = "Tatal steps per day")
+```
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+weekdays <- weekdays(as.Date(days))
+dff <- mutate(dff,weekdays = weekdays(as.Date(date)))
+dff$daytype <- "Weekday"
+dff$daytype[dff$weekdays %in% c("Saturday", "Sunday")] <- "Weekend"
+```
+
+```{r}
+
+```
+
+```{r}
+z <- filter(dff, daytype == "Weekday")
+pat <- matrix(ncol = 2, nrow = 0)
+colnames(pat) <- c("interval", "mean")
+for (i in int) {
+        x <- c()
+        y <- filter(z, interval == i)
+        x <- c(i, mean(as.numeric(y$steps), na.rm = TRUE))
+        pat <- rbind(pat,x)
+}
+pat <- as.data.frame(pat)
+p <- ggplot(data = pat,aes(x = interval, y = mean)) + geom_line()
+z <- filter(dff, daytype == "Weekend")
+pat2 <- matrix(ncol = 2, nrow = 0)
+colnames(pat2) <- c("interval", "mean")
+for (i in int) {
+        x <- c()
+        y <- filter(z, interval == i)
+        x <- c(i, mean(as.numeric(y$steps), na.rm = TRUE))
+        pat2 <- rbind(pat2,x)
+}
+pat2 <- as.data.frame(pat2)
+q <- ggplot(data = pat2,aes(x = interval, y = mean)) + geom_line()
+library("gridExtra")
+grid.arrange(p, q)
+```
+
+
